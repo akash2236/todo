@@ -1,182 +1,82 @@
-# ⚡ TASKFLOW // Premium Minimalist React Workspace
+# ⚡ Taskflow // Basic Beginner Todo List
 
-Taskflow is an enterprise-grade, highly optimized **React Todo Workspace** built with a gorgeous minimalist light design and advanced state architectures. By completely separating modules and applying strict rendering optimization patterns, the codebase provides an excellent educational standard for modern React engineering.
-
----
-
-## 🗺️ Architectural Visualizations
-
-To fully understand how data, states, and event triggers flow through Taskflow, review the visual mappings below.
-
-### 1. Component Tree Hierarchy
-The application is structured into highly focused, reusable components. Props flow downward, and dispatch triggers bubble upward:
-
-```text
-               [ App.jsx ] (Root Wrapper)
-                    │
-              [ TodoApp.jsx ] (Core Orchestrator & State Reducer)
-        ┌───────────┼───────────────┬────────────────┐
-        │           │               │                │
-   [ TodoForm ] [ TodoStats ] [ TodoFilters ]   [ TodoList ]
-                    │                                │
-             (useMemo Stats)                 [ TodoItem ] (xN)
-                                                     │
-                                            (Expired Countdown)
-```
-
-### 2. State & Data Flow Pipeline
-Below is the reactive pipeline showing how user actions dispatch state transitions, trigger persistent local storage synching, cache heavy listing queries, and execute the 3-day Soft Delete auto-cleanup mounting effect:
-
-```mermaid
-graph TD
-    %% User Actions
-    UserAdd[User Creates Task] -->|Triggers Form Submit| FormSubmit[TodoForm callback]
-    UserToggle[User Checks Todo] -->|Toggle Action| CompleteToggle[TodoItem callback]
-    UserDelete[User Clicks Trash] -->|Soft Delete Action| ModalTrigger[DeleteConfirmationModal]
-    
-    %% Central Reducer Dispatch
-    FormSubmit -->|dispatch ADD| Reducer{useReducer: todoReducer}
-    CompleteToggle -->|dispatch TOGGLE| Reducer
-    ModalTrigger -->|dispatch DELETE_SOFT| Reducer
-    ModalTrigger -->|dispatch DELETE_PERMANENT| Reducer
-    
-    %% Expiration Lifecycle
-    Mount[Application Mounts] -->|dispatch CLEANUP_EXPIRED| Reducer
-    
-    %% State Updates & Persistence
-    Reducer -->|Computes Next State| StateUpdate[Updated Todos State]
-    StateUpdate -->|useEffect Trigger| LocalStorage[(window.localStorage Sync)]
-    
-    %% Performance Caching (useMemo)
-    StateUpdate -->|Memoized Filters| UseMemoFilter[useMemo: filteredAndSortedTodos]
-    StateUpdate -->|Memoized Stats| UseMemoStats[useMemo: TodoStats Calculations]
-    
-    %% UI Render Layer
-    UseMemoFilter -->|Re-renders Cards| TodoList
-    UseMemoStats -->|Updates Metrics| TodoStats
-```
+Taskflow is a clean, straightforward **React Todo List Workspace** built for the **Day 3 Frontend Assignment**. The application delivers an extremely easy-to-read and well-structured React architecture, utilizing only standard, beginner-level React hooks (`useState`, `useRef`, `useEffect`) to ensure maximum clarity and educational value.
 
 ---
 
-## 🛠️ Advanced Optimization Patterns
+## 🚀 Core Features Demonstrated
 
-Taskflow is designed around React's most powerful functional hooks to guarantee fluid performance, memory safety, and strict rendering controls.
+This project addresses all of the essential assignment requirements in a lightweight, single-state framework:
 
-### 1. Centralized Actions with `useReducer`
-Rather than scattering multiple `useState` setters across helper components, Taskflow uses a single core **reducer** function to manage state transitions. This prevents disjointed states and provides a clean, single point of truth:
+### 1. ⚙️ `useState`: Simple Form Inputs & List Management
+*   The **TodoForm** uses a single controlled text input state to collect new task titles.
+*   The comprehensive task list is managed in `TodoApp` using a standard `todos` array state, guaranteeing immediate updates when tasks are added, edited, toggled, or deleted.
 
-```javascript
-const todoReducer = (state, action) => {
-  switch (action.type) {
-    case 'ADD':
-      return [action.payload, ...state];
-    case 'UPDATE':
-      return state.map(todo => todo.id === action.payload.id ? { ...todo, ...action.payload.todoData } : todo);
-    case 'TOGGLE':
-      return state.map(todo => todo.id === action.payload ? { ...todo, completed: !todo.completed } : todo);
-    case 'RESTORE':
-      return state.map(todo => todo.id === action.payload ? { ...todo, deletedAt: null } : todo);
-    case 'DELETE_SOFT':
-      return state.map(todo => todo.id === action.payload ? { ...todo, deletedAt: new Date().toISOString(), completed: false } : todo);
-    case 'DELETE_PERMANENT':
-      return state.filter(todo => todo.id !== action.payload);
-    case 'CLEANUP_EXPIRED': {
-      const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-      return state.filter(todo => {
-        if (!todo.deletedAt) return true;
-        const deletedTime = new Date(todo.deletedAt).getTime();
-        const age = now - deletedTime;
-        return age < threeDaysInMs;
-      });
-    }
-    default:
-      return state;
-  }
-};
-```
+### 2. 🎯 `useRef`: Post-Submission Auto-Focus
+*   The **TodoForm** references the task input element using a React `useRef` hook.
+*   Upon form submission, the input field is cleared and instantly refocused via `inputRef.current.focus()`. This allows fast, continuous keyboard entry for multiple tasks.
 
-### 2. Render Protection with `useCallback`
-Passing raw, inline anonymous functions downward causes child components to reconstruct their event bindings and re-render on every cycle. Taskflow guards all downward action handlers using **`useCallback`** to keep memory references stable:
+### 3. 💾 `useEffect`: LocalStorage Persistence
+*   A mounting `useEffect` reads and parses previously saved tasks from the browser's `localStorage` on load.
+*   A second reactive `useEffect` monitors the `todos` array and automatically serializes and saves updates back to `localStorage` in JSON format on every change.
 
-*   **Stable Identity**: Components like `TodoForm`, `TodoFilters`, and `TodoItem` receive memoized callback references. They do not trigger heavy DOM updates unless their specific target parameters have mutated.
+### 4. 🗑️ 3-Day Soft-Delete Trash Retention
+*   When a user clicks "Delete" on an active task, it is soft-deleted: marked with a `deletedAt` timestamp and moved into the Trash bin.
+*   Soft-deleted tasks in the Trash show an expiration countdown badge (e.g. `Expires in 3 days`).
+*   On load, a mounting side effect calculates if the task has been in the trash for more than **3 days (259,200,000 ms)**. If so, it is automatically and permanently purged from the list!
+*   Users can "Restore" a task from the Trash tab at any time, or "Delete Permanently" (which triggers a standard browser `confirm()` modal).
 
-### 3. Computations Caching with `useMemo`
-Taskflow caches expensive array transformations so that simple typing or focus shifts do not trigger redundant recalculations:
+### 5. 🔀 Filter by Status & Search
+*   Users can search active task titles dynamically via a text search input.
+*   Filter tabs allow viewing tasks by: **All** (Active), **Active** (Pending), **Completed** (Done), and **Trash** (Soft-deleted).
 
-*   **`filteredAndSortedTodos`**: Caches and indexes search queries, priority tags, categories, and status categories (All, Active, Completed, Trash).
-*   **`TodoStats` calculations**: Prevents counting, parsing, and percentage division from executing on every typing stroke in the search filter.
-
----
-
-## ♻️ The 3-Day Soft-Delete Engine
-
-To provide a safe trash recovery experience, Taskflow implements a mathematical **Soft Delete** cycle matching your exact retention specifications.
-
-### 1. The Soft-Delete Expiration Formula
-When a task is moved to the Trash, the application stores a timestamp (`deletedAt: new Date().toISOString()`). The remaining time is reactively computed on render using the following mathematical logic:
-
-$$\text{Remaining Time (ms)} = (3 \times 24 \times 60 \times 60 \times 1000) - (\text{Current Time} - \text{Deleted Time})$$
-
-*   If the remaining time is **greater than 24 hours**, the badge renders: `Expires in X days`.
-*   If the remaining time is **less than 24 hours**, the badge switches to active hours counting: `Expires in X hours`.
-*   If the remaining time is **less than or equal to 0**, the engine marks it as: `Expiring now...`.
-
-### 2. Mounting Expiration Side Effect
-On initial workspace load, a mounting `useEffect` dispatches the `CLEANUP_EXPIRED` action. Any task flagged with a `deletedAt` timestamp older than **3 days (259,200,000 ms)** is instantly and permanently pruned from the array, keeping the user's `localStorage` footprint lightweight and clean.
+### 6. 📝 Edit Existing Todo
+*   Clicking the "Edit" button on a task populates the main input form with its current title and shifts focus directly to the input, enabling immediate changes.
 
 ---
 
 ## 📂 Modular Component Directory
 
-The directory is divided to separate concerns and ensure a clean, maintainable structure:
+The directory structure is cleanly organized, making it easy to explain to an evaluator:
 
 ```text
 stikbook/
-├── public/                   # Static browser assets
+├── public/                   # Static assets
 ├── src/
 │   ├── components/
-│   │   ├── DeleteConfirmationModal.jsx # Danger confirmation alert overlay
-│   │   ├── Toast.jsx         # Floating feedback notifications (Success, Info, Warning)
-│   │   ├── TodoApp.jsx       # Main orchestrator, useReducer state, and useCallback bindings
-│   │   ├── TodoFilters.jsx   # Search query, category selectors, and active status tabs
-│   │   ├── TodoForm.jsx      # Task entries controlled via state (with useRef focus)
-│   │   ├── TodoItem.jsx      # Task card card containing checkmarks and trash timers
-│   │   ├── TodoList.jsx      # Maps list items and outputs custom empty states
-│   │   └── TodoStats.jsx     # Stats cards tracking active, completed, and trashed counts
-│   ├── App.jsx               # Root entry loading <TodoApp />
-│   ├── index.css             # Minimalist light-themed CSS system
-│   └── main.jsx              # StrictMode React mount loader
-├── index.html                # Google Font Typography (Plus Jakarta Sans & Outfit)
-├── package.json              # Vector Icons & build tools
-└── vite.config.js            # Vite compiler rules
+│   │   ├── TodoApp.jsx       # Holds core useState, useEffect storage, and event handlers
+│   │   ├── TodoFilters.jsx   # Search query input and status tabs (All, Active, Completed, Trash)
+│   │   ├── TodoForm.jsx      # Task title input form featuring useRef auto-focus
+│   │   ├── TodoItem.jsx      # Individual todo row cards with checkboxes, edit, and delete triggers
+│   │   ├── TodoList.jsx      # Maps active card collections or outputs simple empty states
+│   │   └── TodoStats.jsx     # Simple text badge displaying live stats counts
+│   ├── App.jsx               # Root element rendering <TodoApp />
+│   ├── index.css             # Layout styling sheets
+│   └── main.jsx              # Mounts the React application
+├── index.html                # App landing HTML file
+├── package.json              # Vector icons and build packages
+└── vite.config.js            # Vite build rules
 ```
 
 ---
 
-## 🏃 Local Setup & Operation
+## 🏃 Local Setup & Commands
 
-Follow these straightforward scripts to run the production-ready code locally:
+Follow these basic commands to run the application locally:
 
-### 1. Installation
-Navigate to the root directory and install standard dependencies:
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Launch Local Dev Server
-Start the development server with Hot Module Replacement (HMR) capabilities:
+### 2. Start the Local Server
 ```bash
 npm run dev
 ```
-Open `http://localhost:5173/` in your web browser to interact with the application.
+Open `http://localhost:5173` in your browser.
 
 ### 3. Compile Production Bundle
-To compile, bundle, and generate a highly optimized static build for online hosting:
 ```bash
 npm run build
 ```
-Static compiled code is outputted directly to the `/dist` directory.
-
----
-*Created with 💜 as a high-end React Todo Dashboard.*
+Generates highly optimized, static production files inside the `/dist` folder.
