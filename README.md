@@ -4,6 +4,51 @@ Taskflow is a clean, straightforward **React Todo List Workspace** built for the
 
 ---
 
+## 🗺️ Visual Flowcharts & Hierarchies
+
+To help easily explain how the application works, here are the component and data flow structures:
+
+### 1. Component Tree Structure
+The application maps a single-state orchestrator that feeds child components through simple parent-child props:
+
+```text
+               [ App.jsx ]
+                    │
+              [ TodoApp.jsx ] (Holds state & CRUD functions)
+        ┌───────────┼───────────────┬────────────────┐
+        │           │               │                │
+   [ TodoForm ] [ TodoStats ] [ TodoFilters ]   [ TodoList ]
+                                                     │
+                                                [ TodoItem ] (xN)
+```
+
+### 2. State & Data Flow Pipeline
+Below is a flowchart demonstrating how user interactions update state and save to local storage:
+
+```mermaid
+graph TD
+    %% User Inputs
+    UserAdd[User types in Form] -->|Submits Form| AddHandler[handleAddTodo]
+    UserCheck[User clicks Checkbox] -->|Changes Completed Status| ToggleHandler[handleToggleComplete]
+    UserDel[User clicks Delete] -->|Soft Deletes Task| DeleteHandler[handleDeleteTodo]
+    
+    %% Expiration Lifecycle
+    Mount[Application Mounts] -->|Runs Clean useEffect| Cleanup[Filters out tasks older than 3 days]
+    
+    %% State Mutations
+    AddHandler -->|Updates State| State[todos array state]
+    ToggleHandler -->|Updates State| State
+    DeleteHandler -->|Updates State| State
+    Cleanup -->|Updates State| State
+    
+    %% Side Effects & Storage
+    State -->|Triggers useEffect| Storage[(window.localStorage Sync)]
+    State -->|Renders dynamic count| TodoStats
+    State -->|Renders list cards| TodoList
+```
+
+---
+
 ## 🚀 Core Features Demonstrated
 
 This project addresses all of the essential assignment requirements in a lightweight, single-state framework:
